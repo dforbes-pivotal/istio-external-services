@@ -65,7 +65,6 @@ The result is a traffic flow that looks like this:
 
 `traffic` --> `envoy` --> `service-that-calls-externally` --> `app-that-calls-externally` --> `envoy` --> `istio-egressgateway` --> external service
 
-
 ## Validation
 
 To check that ths demo is working as intended, tail the logs of the `traffic` pod(s) (`kubectl logs deploy/traffic -f`).

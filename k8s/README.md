@@ -16,3 +16,17 @@ Deploy these resources to your current Kubernetes context by:
     ```sh
     kubectl get all,cm,gw,se,vs,dr -l demo=istio-external-services
     ```
+
+To clean up afterwards:
+
+1. Either
+
+    ```sh
+    kubectl delete -f .
+    ```
+
+    or
+
+    ```sh
+    kubectl delete all,cm,gw,se,vs,dr -l demo=istio-external-services
+    ```
