@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: proxy-conf-template
+  labels:
+    demo: istio-external-services
+data:
+  nginx.conf.template: |
+    server {
+      location / {
+        proxy_pass $URL;
+        proxy_ssl_server_name on;
+        proxy_http_version 1.1;
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-that-calls-externally
+  labels:
+    demo: istio-external-services
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: app-that-calls-externally
+  template:
+    metadata:
+      labels:
+        app: app-that-calls-externally
+        demo: istio-external-services
+        version: "1"
+    spec:
+      containers:
+      - name: nginx-proxy
+        image: nginx
+        ports:
+        - containerPort: 80
+        env:
+        - name: URL
+          value: "http://hello-istio-v1.apps.coachella.cf-app.com/"
+        volumeMounts:
+        - mountPath: /etc/nginx/templates
+          name: proxy-conf-template
+          readOnly: true
+        - mountPath: /etc/nginx/conf.d
+          name: proxy-conf
+        - mountPath: /var/log/nginx
+          name: log
+      volumes:
+      - name: proxy-conf-template
+        configMap:
+          name: proxy-conf-template
+          items:
+          - key: nginx.conf.template
+            path: nginx.conf.template
+      - name: proxy-conf
+        emptyDir: {}
+      - name: log
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-that-calls-externally
+  labels:
+    demo: istio-external-services
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    name: http
+  selector:
+    app: app-that-calls-externally

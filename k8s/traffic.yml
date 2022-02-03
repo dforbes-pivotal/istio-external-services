@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: traffic
+    demo: istio-external-services
+  name: traffic
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: traffic
+  template:
+    metadata:
+      labels:
+        app: traffic
+        demo: istio-external-services
+        version: "1"
+    spec:
+      containers:
+      - name: traffic
+        image: curlimages/curl
+        command: ['sh', '-c']
+        args: ['while true; do
+            echo -e `date -Is`"\t"`curl -sSL $(URL)`;
+            sleep $(SLEEP);
+          done;']
+        env:
+        - name: URL
+          value: "http://service-that-calls-externally/"
+        - name: SLEEP
+          value: "5"
