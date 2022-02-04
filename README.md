@@ -7,7 +7,7 @@ The external services are assumed to be available over HTTPS, proxied by an Isti
 which makes those services available inside the mesh over HTTP, although traffic inside the mesh
 would be secured according to the TLS configuration of the mesh. This allows an Istio `VirtualService`
 to manage the traffic to the external services from the point of view of the mesh workloads, enabling
-traffic shifting, fault injection, timeouts and retries, and so on.
+traffic shifting _(not currently working)_, fault injection, timeouts and retries, and so on.
 
 ## Deploying
 
@@ -66,6 +66,9 @@ The result is a traffic flow that looks like this:
 `traffic` --> `envoy` --> `service-that-calls-externally` --> `app-that-calls-externally` --> `envoy` --> `istio-egressgateway` --> external service
 
 ## Validation
+
+**This demo currently doesn't implement traffic shifting correctly! The following steps describe what to
+expect when traffic shifting has been implemented.**
 
 To check that this demo is working as intended, tail the logs of the `traffic` pod(s) (`kubectl logs deploy/traffic -f`).
 With the traffic shifting that is set up by default with these Kubernetes resources, the output should

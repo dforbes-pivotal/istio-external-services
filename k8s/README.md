@@ -14,7 +14,7 @@ Deploy these resources to your current Kubernetes context by:
 To see the status of all resources created for this demo, run:
 
 ```sh
-kubectl get all,cm,gw,se,vs,dr -l demo=istio-external-services
+kubectl get all,cm,gw,se,vs,dr -l demo=istio-external-services -A
 ```
 
 To clean up afterwards:

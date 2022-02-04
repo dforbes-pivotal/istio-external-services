@@ -1,7 +1,7 @@
 apiVersion: networking.istio.io/v1beta1
 kind: ServiceEntry
 metadata:
-  name: cf-services
+  name: hello-istio-v1
   labels:
     demo: istio-external-services
 spec:
@@ -9,7 +9,7 @@ spec:
     - hello-istio-v1.apps.coachella.cf-app.com
   location: MESH_EXTERNAL
   ports:
-  - number: 80
+  - number: 8080
     name: http
     protocol: HTTP
     targetPort: 443
@@ -20,9 +20,60 @@ spec:
   resolution: DNS
 ---
 apiVersion: networking.istio.io/v1beta1
+kind: ServiceEntry
+metadata:
+  name: hello-istio-v2
+  labels:
+    demo: istio-external-services
+spec:
+  hosts:
+    - hello-istio-v2.apps.coachella.cf-app.com
+  location: MESH_EXTERNAL
+  ports:
+  - number: 8081
+    name: http
+    protocol: HTTP
+    targetPort: 443
+  - number: 443
+    name: https
+    protocol: HTTPS
+    targetPort: 443
+  resolution: DNS
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: hello-istio-v1
+  labels:
+    demo: istio-external-services
+spec:
+  host: hello-istio-v1.apps.coachella.cf-app.com
+  trafficPolicy:
+    portLevelSettings:
+    - port:
+        number: 8080
+      tls:
+        mode: SIMPLE
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: hello-istio-v2
+  labels:
+    demo: istio-external-services
+spec:
+  host: hello-istio-v2.apps.coachella.cf-app.com
+  trafficPolicy:
+    portLevelSettings:
+    - port:
+        number: 8081
+      tls:
+        mode: SIMPLE
+---
+apiVersion: networking.istio.io/v1beta1
 kind: Gateway
 metadata:
-  name: istio-egressgateway
+  name: cf-service-v1
   labels:
     demo: istio-external-services
 spec:
@@ -34,40 +85,48 @@ spec:
       name: http
       protocol: HTTP
     hosts:
-      - hello-istio-v1.apps.coachella.cf-app.com
+      - "*"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: cf-service-v2
+  labels:
+    demo: istio-external-services
+spec:
+  selector:
+    istio: egressgateway
+  servers:
+  - port:
+      number: 81
+      name: http
+      protocol: HTTP
+    hosts:
+      - "*"
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: DestinationRule
 metadata:
-  name: egressgateway-for-hello-istio-v1
+  name: egressgateway-for-cf-services
   labels:
     demo: istio-external-services
 spec:
-  host: hello-istio-v1.apps.coachella.cf-app.com
-  trafficPolicy:
-    portLevelSettings:
-    - port:
-        number: 80
-      tls:
-        mode: SIMPLE
+  host: istio-egressgateway.istio-system.svc.cluster.local
 ---
 apiVersion: networking.istio.io/v1beta1
 kind: VirtualService
 metadata:
-  name: hello-istio
+  name: hello-istio-v1
   labels:
     demo: istio-external-services
 spec:
   hosts:
   - hello-istio-v1.apps.coachella.cf-app.com
   gateways:
-    - mesh
-    - istio-egressgateway
+  - mesh
   http:
   - match:
-    - gateways:
-      - mesh
-      port: 80
+    - port: 80
     fault:
       abort:
         httpStatus: 418
@@ -78,12 +137,45 @@ spec:
         host: istio-egressgateway.istio-system.svc.cluster.local
         port:
           number: 80
-      weight: 100
+      weight: 30
+    - destination:
+        host: istio-egressgateway.istio-system.svc.cluster.local
+        port:
+          number: 81
+      weight: 70
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: cf-service
+  labels:
+    demo: istio-external-services
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - cf-service-v1
+  - cf-service-v2
+  http:
   - match:
     - gateways:
-      - istio-egressgateway
-      port: 80
+      - cf-service-v1
+    rewrite:
+      authority: hello-istio-v1.apps.coachella.cf-app.com
     route:
     - destination:
         host: hello-istio-v1.apps.coachella.cf-app.com
+        port:
+          number: 8080
+      weight: 100
+  - match:
+    - gateways:
+      - cf-service-v2
+    rewrite:
+      authority: hello-istio-v2.apps.coachella.cf-app.com
+    route:
+    - destination:
+        host: hello-istio-v2.apps.coachella.cf-app.com
+        port:
+          number: 8081
       weight: 100
