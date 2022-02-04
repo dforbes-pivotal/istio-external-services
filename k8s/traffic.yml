@@ -29,4 +29,4 @@ spec:
         - name: URL
           value: "http://service-that-calls-externally/"
         - name: SLEEP
-          value: "5"
+          value: "1"

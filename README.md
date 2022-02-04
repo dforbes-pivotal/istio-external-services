@@ -5,7 +5,7 @@ and applying some of the traffic management approaches to those services to apps
 
 The external services are assumed to be available over HTTPS, proxied by an Istio egress gateway
 which makes those services available inside the mesh over HTTP, although traffic inside the mesh
-would be secured according to the TLS configuration of the mesh. This allows as Istio `VirtualService`
+would be secured according to the TLS configuration of the mesh. This allows an Istio `VirtualService`
 to manage the traffic to the external services from the point of view of the mesh workloads, enabling
 traffic shifting, fault injection, timeouts and retries, and so on.
 
@@ -13,7 +13,7 @@ traffic shifting, fault injection, timeouts and retries, and so on.
 
 ### Target services
 
-Included are two apps that can be deployed to Cloud Foundry, where we assume acess to those apps is
+Included are two apps that can be deployed to Cloud Foundry, where we assume access to those apps is
 secured with TLS. The Kubernetes manifests that define the workloads that connect to these Cloud Foundry
 services refer to those apps as `hello-istio-v1.apps.coachella.cf-app.com` and `hello-istio-v2.apps.coachella.cf-app.com`;
 substitute the actual names for these apps in the Kubernetes manifest.
@@ -67,7 +67,23 @@ The result is a traffic flow that looks like this:
 
 ## Validation
 
-To check that ths demo is working as intended, tail the logs of the `traffic` pod(s) (`kubectl logs deploy/traffic -f`).
+To check that this demo is working as intended, tail the logs of the `traffic` pod(s) (`kubectl logs deploy/traffic -f`).
 With the traffic shifting that is set up by default with these Kubernetes resources, the output should
 come from a combination of the v1 and v2 services running on Cloud Foundry, with a few occurrences of
-HTTP 418 failures.
+HTTP 418 failures (these show up as "`fault filter abort`"):
+
+```text
+2022-02-04T10:34:33+00:00       Hello K8s, from CF v1 service!
+2022-02-04T10:34:34+00:00       Hello K8s, from CF v2 service!
+2022-02-04T10:34:35+00:00       Hello K8s, from CF v1 service!
+2022-02-04T10:34:36+00:00       Hello K8s, from CF v2 service!
+2022-02-04T10:34:37+00:00       fault filter abort
+2022-02-04T10:34:38+00:00       Hello K8s, from CF v2 service!
+2022-02-04T10:34:39+00:00       Hello K8s, from CF v2 service!
+2022-02-04T10:34:40+00:00       Hello K8s, from CF v1 service!
+2022-02-04T10:34:41+00:00       Hello K8s, from CF v1 service!
+2022-02-04T10:34:42+00:00       Hello K8s, from CF v2 service!
+2022-02-04T10:34:43+00:00       Hello K8s, from CF v2 service!
+2022-02-04T10:34:44+00:00       fault filter abort
+2022-02-04T10:34:45+00:00       Hello K8s, from CF v1 service!
+```
